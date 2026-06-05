@@ -4,3 +4,8 @@ __pycache__/
 .DS_Store
 *.pdf
 !samples/
+
+# Internal project docs
+CLAUDE.md
+PROJECT_OVERVIEW.md
+DESIGN_DECISIONS.md
