@@ -1,7 +1,7 @@
+import io
 import os
 os.environ.setdefault("USE_TORCH", "1")  # prefer torch backend; doctr auto-detects if only one is available
 
-import numpy as np
 import pandas as pd
 import streamlit as st
 from PIL import Image
@@ -20,8 +20,12 @@ def preload() -> None:
 def run_with_boxes(image: Image.Image) -> pd.DataFrame:
     from doctr.io import DocumentFile
 
+    buf = io.BytesIO()
+    image.save(buf, format="PNG")
+    img_bytes = buf.getvalue()
+
     model = _get_model()
-    doc = DocumentFile.from_images([np.array(image)])
+    doc = DocumentFile.from_images([img_bytes])
     result = model(doc)
 
     w, h = image.width, image.height
