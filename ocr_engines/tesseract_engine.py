@@ -3,6 +3,10 @@ import pandas as pd
 from PIL import Image
 
 
+def preload() -> None:
+    pass  # Tesseract is a CLI binary — no model to load into memory
+
+
 def run(image: Image.Image) -> str:
     return pytesseract.image_to_string(image)
 

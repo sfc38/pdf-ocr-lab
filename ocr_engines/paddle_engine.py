@@ -5,10 +5,14 @@ from PIL import Image
 from utils.image_utils import split_to_word_boxes
 
 
-@st.cache_resource(show_spinner="Loading PaddleOCR model (first run only)...")
+@st.cache_resource(show_spinner=False)
 def _get_ocr():
     from paddleocr import PaddleOCR  # deferred — heavy dependency
     return PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+
+
+def preload() -> None:
+    _get_ocr()
 
 
 def run_with_boxes(image: Image.Image) -> pd.DataFrame:

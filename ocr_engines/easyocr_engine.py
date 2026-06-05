@@ -5,10 +5,14 @@ from PIL import Image
 from utils.image_utils import split_to_word_boxes
 
 
-@st.cache_resource(show_spinner="Loading EasyOCR model (first run only)...")
+@st.cache_resource(show_spinner=False)
 def _get_reader():
     import easyocr  # deferred — not available on Python 3.13+
     return easyocr.Reader(["en"], gpu=False)
+
+
+def preload() -> None:
+    _get_reader()
 
 
 def run_with_boxes(image: Image.Image) -> pd.DataFrame:

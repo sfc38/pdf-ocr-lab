@@ -125,19 +125,35 @@ if run_clicked:
     image = st.session_state["page_image"]
     results = {}
     for eng in engines_to_run:
-        with st.spinner(f"Running {eng}..."):
+        module = {"Tesseract": tesseract_engine, "EasyOCR": easyocr_engine, "PaddleOCR": paddle_engine}[eng]
+
+        # ── Model load (timed once; session_state prevents re-timing after cache hit) ──
+        load_key = f"model_load_time_{eng}"
+        if load_key not in st.session_state:
+            with st.spinner(f"Loading {eng} model — this can take a minute on first run..."):
+                t0 = time.perf_counter()
+                try:
+                    module.preload()
+                except Exception as e:
+                    st.error(f"{eng} model load failed: {e}")
+                    continue
+                st.session_state[load_key] = time.perf_counter() - t0
+
+        # ── OCR inference ──────────────────────────────────────────────────────────────
+        with st.spinner(f"Running {eng} OCR..."):
             t0 = time.perf_counter()
             try:
-                if eng == "Tesseract":
-                    words = tesseract_engine.run_with_boxes(image)
-                elif eng == "EasyOCR":
-                    words = easyocr_engine.run_with_boxes(image)
-                else:
-                    words = paddle_engine.run_with_boxes(image)
+                words = module.run_with_boxes(image)
             except Exception as e:
-                st.error(f"{eng} failed: {e}")
+                st.error(f"{eng} OCR failed: {e}")
                 continue
-            results[eng] = {"words": words, "time": time.perf_counter() - t0}
+            inference_time = time.perf_counter() - t0
+
+        results[eng] = {
+            "words": words,
+            "inference_time": inference_time,
+            "model_load_time": st.session_state[load_key],
+        }
     st.session_state["ocr_results"] = results
 
 # ── 4. Results ───────────────────────────────────────────────────
@@ -164,16 +180,24 @@ def _conf_range(words):
     return int(nonempty["conf"].min()), int(nonempty["conf"].max())
 
 def render_result(col_img, col_text, name, data, threshold, key_suffix):
-    words     = data["words"]
-    text      = _text(words, threshold)
-    n_words   = len(_visible(words, threshold))
-    annotated = draw_word_boxes(image, words, threshold)
+    words      = data["words"]
+    text       = _text(words, threshold)
+    n_words    = len(_visible(words, threshold))
+    annotated  = draw_word_boxes(image, words, threshold)
     conf_range = _conf_range(words)
+    load_time  = data.get("model_load_time", 0)
+    inf_time   = data.get("inference_time", 0)
 
     col_img.subheader(name)
-    m1, m2 = col_img.columns(2)
-    m1.metric("OCR time", f"{data['time']:.2f}s")
-    m2.metric("Words", n_words)
+    if load_time and load_time > 0.05:
+        m1, m2, m3 = col_img.columns(3)
+        m1.metric("Model load", f"{load_time:.1f}s", help="One-time cost; cached for subsequent runs")
+        m2.metric("OCR time", f"{inf_time:.2f}s")
+        m3.metric("Words", n_words)
+    else:
+        m1, m2 = col_img.columns(2)
+        m1.metric("OCR time", f"{inf_time:.2f}s")
+        m2.metric("Words", n_words)
     if conf_range:
         col_img.caption(f"Confidence range: {conf_range[0]}–{conf_range[1]}")
     col_img.image(annotated, use_container_width=True)
