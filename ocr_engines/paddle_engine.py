@@ -21,7 +21,7 @@ def preload() -> None:
 
 def run_with_boxes(image: Image.Image) -> pd.DataFrame:
     ocr = _get_ocr()
-    result = ocr.ocr(np.array(image), cls=False)
+    result = ocr.ocr(np.array(image))
 
     rows = []
     detections = result[0] if result and result[0] else []
