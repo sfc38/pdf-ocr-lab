@@ -2,11 +2,12 @@ from pdf2image import convert_from_bytes
 from PIL import Image
 
 
-def pdf_to_image(pdf_bytes: bytes, page_number: int) -> Image.Image:
+def pdf_to_image(pdf_bytes: bytes, page_number: int, dpi: int = 200) -> Image.Image:
     images = convert_from_bytes(
         pdf_bytes,
         first_page=page_number,
         last_page=page_number,
+        dpi=dpi,
     )
     return images[0]
 
