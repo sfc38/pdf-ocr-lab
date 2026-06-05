@@ -42,3 +42,13 @@ This is an append-only log. Each entry records a decision, why it was made, and 
 **Why:** This is a personal portfolio project. The explicit goal is to demonstrate that a fully functional OCR app can be built and hosted for free using open-source tools. Paid services (Google Vision, AWS Textract, Azure OCR, OpenAI) are permanently off the table.
 
 ---
+
+## 2026-06-05 — Docker for Deployment
+
+**Decision:** Use a Dockerfile for Hugging Face Spaces deployment (and local portability).
+
+**Why:** HF Spaces dropped native Streamlit support — Docker is now required for all Streamlit apps there. The Dockerfile also solves cross-platform local dev: it bundles `tesseract-ocr` and `poppler-utils` so anyone on Mac, Linux, or Windows can run the app without manually installing system packages.
+
+**Alternatives considered:** Streamlit Community Cloud (no Docker needed, but limited system package support for heavier models in V2/V3). Kept as a backup option.
+
+---
