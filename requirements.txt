@@ -5,3 +5,4 @@ pillow
 pandas
 easyocr
 paddleocr
+python-doctr

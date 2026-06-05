@@ -1,8 +1,10 @@
 import time
+import pandas as pd
 import streamlit as st
 from utils.pdf_utils import pdf_to_image, get_page_count
 from utils.image_utils import draw_word_boxes
-from ocr_engines import tesseract_engine, easyocr_engine, paddle_engine
+from utils import metrics as metrics_utils
+from ocr_engines import tesseract_engine, easyocr_engine, paddle_engine, doctr_engine
 
 st.set_page_config(page_title="Local OCR Lab", layout="wide")
 st.title("Local OCR Lab")
@@ -78,8 +80,8 @@ st.image(
 # ── 3. OCR ───────────────────────────────────────────────────────
 st.header("3 · Run OCR")
 
-ENGINES = ["Tesseract", "EasyOCR", "PaddleOCR", "Compare All"]
-SLOW_ENGINES = {"EasyOCR", "PaddleOCR"}
+ENGINES = ["Tesseract", "EasyOCR", "PaddleOCR", "DocTR", "Compare All"]
+SLOW_ENGINES = {"EasyOCR", "PaddleOCR", "DocTR"}
 
 col_engine, col_run = st.columns([4, 1])
 with col_engine:
@@ -98,7 +100,7 @@ with col_run:
     run_clicked = st.button("Run OCR", type="primary", use_container_width=True)
 
 engines_to_run = (
-    ["Tesseract", "EasyOCR", "PaddleOCR"] if engine_choice == "Compare All"
+    ["Tesseract", "EasyOCR", "PaddleOCR", "DocTR"] if engine_choice == "Compare All"
     else [engine_choice]
 )
 
@@ -125,7 +127,12 @@ if run_clicked:
     image = st.session_state["page_image"]
     results = {}
     for eng in engines_to_run:
-        module = {"Tesseract": tesseract_engine, "EasyOCR": easyocr_engine, "PaddleOCR": paddle_engine}[eng]
+        module = {
+            "Tesseract": tesseract_engine,
+            "EasyOCR":   easyocr_engine,
+            "PaddleOCR": paddle_engine,
+            "DocTR":     doctr_engine,
+        }[eng]
 
         # ── Model load (timed once; session_state prevents re-timing after cache hit) ──
         load_key = f"model_load_time_{eng}"
@@ -228,3 +235,44 @@ else:
     text_cols = st.columns(n)
     for i, name in enumerate(names):
         render_result(img_cols[i], text_cols[i], name, results[name], conf_threshold, name)
+
+# ── 5. Comparison Metrics ────────────────────────────────────────
+st.header("5 · Comparison Metrics")
+
+all_texts = {name: _text(results[name]["words"], conf_threshold) for name in results}
+
+# Cross-engine Jaccard similarity
+if len(results) > 1:
+    st.subheader("Word overlap between engines")
+    st.caption(
+        "Jaccard similarity: proportion of words that two engines agree on. "
+        "100% = identical outputs, 0% = no shared words."
+    )
+    names = list(results.keys())
+    matrix = {}
+    for a in names:
+        row = {}
+        for b in names:
+            row[b] = "—" if a == b else f"{metrics_utils.jaccard(all_texts[a], all_texts[b]):.0%}"
+        matrix[a] = row
+    st.dataframe(pd.DataFrame(matrix).T, use_container_width=False)
+
+# CER / WER against optional reference text
+st.subheader("Accuracy vs reference text (optional)")
+st.caption(
+    "Paste the correct text to calculate CER and WER. "
+    "CER = character-level error rate, WER = word-level error rate. "
+    "Lower is better. 0% = perfect match."
+)
+ref_text = st.text_area("Reference text", height=120, placeholder="Paste the correct text here…", key="ref_text")
+
+if ref_text.strip():
+    rows = []
+    for name in results:
+        text = all_texts[name]
+        rows.append({
+            "Engine": name,
+            "CER":    f"{metrics_utils.cer(text, ref_text):.1%}",
+            "WER":    f"{metrics_utils.wer(text, ref_text):.1%}",
+        })
+    st.dataframe(pd.DataFrame(rows).set_index("Engine"), use_container_width=False)
