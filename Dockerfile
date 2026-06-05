@@ -8,8 +8,10 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 COPY requirements.txt .
-# Install CPU-only PyTorch first so EasyOCR doesn't pull the full GPU build
+# CPU-only PyTorch so EasyOCR doesn't pull the full GPU build (~600 MB vs ~2.5 GB)
 RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# CPU-only PaddlePaddle before paddleocr to avoid GPU variant being pulled
+RUN pip install --no-cache-dir paddlepaddle
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .

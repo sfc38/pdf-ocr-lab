@@ -5,18 +5,22 @@ from PIL import Image
 from utils.image_utils import split_to_word_boxes
 
 
-@st.cache_resource(show_spinner="Loading EasyOCR model (first run only)...")
-def _get_reader():
-    import easyocr  # deferred — not available on Python 3.13+
-    return easyocr.Reader(["en"], gpu=False)
+@st.cache_resource(show_spinner="Loading PaddleOCR model (first run only)...")
+def _get_ocr():
+    from paddleocr import PaddleOCR  # deferred — heavy dependency
+    return PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
 
 
 def run_with_boxes(image: Image.Image) -> pd.DataFrame:
-    reader = _get_reader()
-    results = reader.readtext(np.array(image))
+    ocr = _get_ocr()
+    result = ocr.ocr(np.array(image), cls=True)
 
     rows = []
-    for bbox, text, conf in results:
+    detections = result[0] if result and result[0] else []
+    for line in detections:
+        if line is None:
+            continue
+        bbox, (text, conf) = line[0], line[1]
         xs = [p[0] for p in bbox]
         ys = [p[1] for p in bbox]
         rows.append({
