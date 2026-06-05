@@ -1,8 +1,13 @@
 import logging
+import os
 import numpy as np
 import pandas as pd
 import streamlit as st
 from PIL import Image
+
+# Must be set before paddle is imported — disables oneDNN (MKL-DNN) which hits an
+# unimplemented ConvertPirAttribute2RuntimeAttribute path on HF Spaces CPU hardware.
+os.environ.setdefault("FLAGS_use_mkldnn", "0")
 
 # suppress the verbose PaddleOCR/PaddlePaddle console output
 logging.getLogger("ppocr").setLevel(logging.ERROR)
@@ -12,7 +17,7 @@ logging.getLogger("paddle").setLevel(logging.ERROR)
 @st.cache_resource(show_spinner=False)
 def _get_ocr():
     from paddleocr import PaddleOCR  # deferred — heavy dependency
-    return PaddleOCR(lang="en")
+    return PaddleOCR(lang="en", enable_mkldnn=False)
 
 
 def preload() -> None:
