@@ -1,12 +1,18 @@
+import logging
 import numpy as np
 import pandas as pd
 import streamlit as st
 from PIL import Image
+
+# suppress the verbose PaddleOCR/PaddlePaddle console output
+logging.getLogger("ppocr").setLevel(logging.ERROR)
+logging.getLogger("paddle").setLevel(logging.ERROR)
+
+
 @st.cache_resource(show_spinner=False)
 def _get_ocr():
     from paddleocr import PaddleOCR  # deferred — heavy dependency
-    # use_angle_cls omitted: it triggers a second model download that often fails on first boot
-    return PaddleOCR(lang="en", show_log=False)
+    return PaddleOCR(lang="en")
 
 
 def preload() -> None:

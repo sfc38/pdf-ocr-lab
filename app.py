@@ -142,7 +142,10 @@ if run_clicked:
                 try:
                     module.preload()
                 except Exception as e:
-                    st.error(f"{eng} model load failed: {e}")
+                    import traceback
+                    st.error(f"{eng} model load failed: {type(e).__name__}: {e}")
+                    with st.expander("Full error details"):
+                        st.code(traceback.format_exc())
                     continue
                 st.session_state[load_key] = time.perf_counter() - t0
 
