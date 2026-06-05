@@ -2,9 +2,6 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from PIL import Image
-from utils.image_utils import split_to_word_boxes
-
-
 @st.cache_resource(show_spinner=False)
 def _get_reader():
     import easyocr  # deferred — not available on Python 3.13+
@@ -32,5 +29,4 @@ def run_with_boxes(image: Image.Image) -> pd.DataFrame:
             "height": int(max(ys) - min(ys)),
         })
 
-    df = pd.DataFrame(rows, columns=["text", "conf", "left", "top", "width", "height"])
-    return split_to_word_boxes(df)
+    return pd.DataFrame(rows, columns=["text", "conf", "left", "top", "width", "height"])
