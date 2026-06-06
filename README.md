@@ -8,21 +8,24 @@ pinned: false
 
 # Local OCR Lab
 
-A web app that extracts text from scanned PDF pages using locally hosted OCR engines — no external APIs, no paid services.
+A web app that extracts text from scanned PDF pages using locally hosted OCR engines — no external APIs, no paid services. All processing happens inside the container.
 
 **Live demo:** [huggingface.co/spaces/sfc38/pdf-ocr-lab](https://huggingface.co/spaces/sfc38/pdf-ocr-lab)
 
 ---
 
-## What it does
+## Features
 
 - Upload a scanned PDF and select a page
-- Control image quality with DPI selector (72–300)
+- Control image quality with DPI selector (72 / 150 / 180 / 200 / 300)
 - Run OCR with any of 4 engines — or all at once for side-by-side comparison
-- Visualise detected words/regions with bounding boxes
-- Tune a confidence threshold to filter noise
+- Bounding box overlay showing detected words / regions
+- Confidence threshold slider — filter noise without re-running OCR
+- Separate timing for model load vs OCR inference
 - Download extracted text as `.txt`
-- Compare engines with Jaccard word overlap (no reference needed) or CER/WER (paste reference text)
+- **Comparison metrics**
+  - Jaccard word overlap matrix between engines (no reference needed)
+  - CER and WER per engine when you paste reference text
 
 ---
 
@@ -35,7 +38,7 @@ A web app that extracts text from scanned PDF pages using locally hosted OCR eng
 | PaddleOCR v5 | Deep learning | Apache 2.0 | Detection region |
 | DocTR | Deep learning | Apache 2.0 | Word |
 
-All engines run locally inside the container. No data leaves the app.
+All engines are free for commercial use.
 
 ---
 
@@ -47,6 +50,7 @@ All engines run locally inside the container. No data leaves the app.
 | Web framework | Streamlit |
 | PDF to image | pdf2image + Poppler |
 | Image annotation | Pillow |
+| Metrics | CER / WER / Jaccard (no external lib) |
 | Deployment | Hugging Face Spaces (Docker) |
 
 ---
@@ -77,12 +81,13 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+> Note: deep learning engines (EasyOCR, PaddleOCR, DocTR) require Python ≤ 3.12 locally. The Docker image uses Python 3.11.
+
 ---
 
 ## Limitations
 
-- Deep learning engines (EasyOCR, PaddleOCR, DocTR) take 20–60 s per page on CPU
-- Model weights (~100–200 MB per engine) download on first use and are cached after that
-- Free HF Spaces tier is CPU-only — GPU would be ~10× faster
-- OCR accuracy depends on scan quality; higher DPI generally helps
-- Large PDFs processed one page at a time
+- Deep learning engines take 20–60 s per page on CPU; model weights (~100–200 MB each) download on first use
+- Free HF Spaces tier is CPU-only
+- OCR accuracy depends on scan quality — higher DPI generally helps
+- Large PDFs are processed one page at a time
